@@ -36,9 +36,14 @@ import java.util.Map;
  * <b>Note: This class is currently intended for Liquibase-internal use only and may change without notice in the future</b>
  */
 public class JdbcExecutor extends AbstractExecutor {
-
     private Logger log = LogService.getLog(getClass());
+	private static final Logger LOG = LogService.getLog(JdbcExecutor.class);
 
+	/** Return the log used by this Liquibase instance */
+    public Logger getLog() {
+        return LOG;
+    }
+	
     @Override
     public boolean updatesDatabase() {
         return true;
@@ -233,8 +238,8 @@ public class JdbcExecutor extends AbstractExecutor {
                 if (sqlToExecute.length != 1) {
                     throw new DatabaseException("Cannot call update on Statement that returns back multiple Sql objects");
                 }
-                log.debug(LogType.WRITE_SQL, sqlToExecute[0]);
-                return stmt.executeUpdate(sqlToExecute[0]);
+                LOG.debug(LogType.WRITE_SQL, sqlToExecute[0]);
+				return stmt.executeUpdate(sqlToExecute[0]);
             }
 
 
@@ -342,7 +347,7 @@ public class JdbcExecutor extends AbstractExecutor {
                     }
                 }
 
-                log.info(LogType.WRITE_SQL, String.format("%s", statement));
+				LOG.info(LogType.USER_MESSAGE, "Executing Statement: " + String.format("%s", statement));
                 if (statement.contains("?")) {
                     stmt.setEscapeProcessing(false);
                 }
@@ -350,7 +355,7 @@ public class JdbcExecutor extends AbstractExecutor {
                     //if execute returns false, we can retrieve the affected rows count
                     // (true used when resultset is returned)
                     if (!stmt.execute(statement)) {
-                        log.debug(Integer.toString(stmt.getUpdateCount()) + " row(s) affected");
+						LOG.info(LogType.USER_MESSAGE, Integer.toString(stmt.getUpdateCount()) + " row(s) affected");
                     }
                 } catch (Throwable e) {
                     throw new DatabaseException(e.getMessage()+ " [Failed SQL: "+statement+"]", e);
@@ -362,7 +367,7 @@ public class JdbcExecutor extends AbstractExecutor {
                         if (!stmt.getMoreResults()) {
                             updateCount = stmt.getUpdateCount();
                             if (updateCount != -1)
-                                log.debug(Integer.toString(updateCount) + " row(s) affected");
+                                LOG.info(LogType.USER_MESSAGE, Integer.toString(updateCount) + " row(s) affected");
                         }
                     } while (updateCount != -1);
 

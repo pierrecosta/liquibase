@@ -129,6 +129,10 @@ public class Main {
         System.exit(errorLevel);
     }
 
+	/** Return the log used by this Liquibase instance */
+    public Logger getLog() {
+        return LOG;
+    }
 
     /**
      * Process the command line arguments and perform the appropriate main action (update, rollback etc.)
@@ -157,13 +161,13 @@ public class Main {
 
 
             Main main = new Main();
-            log.info(LogType.USER_MESSAGE, CommandLineUtils.getBanner());
+            LOG.info(LogType.USER_MESSAGE, CommandLineUtils.getBanner());
 
             if ((args.length == 1) && ("--" + OPTIONS.HELP).equals(args[0])) {
                 main.printHelp(System.out);
                 return 0;
             } else if ((args.length == 1) && ("--" + OPTIONS.VERSION).equals(args[0])) {
-                log.info(LogType.USER_MESSAGE,
+                LOG.info(LogType.USER_MESSAGE,
                     String.format(coreBundle.getString("version.number"), LiquibaseUtil.getBuildVersion() +
                     StreamUtil.getLineSeparator()));
                 return 0;
@@ -172,7 +176,7 @@ public class Main {
             try {
                 main.parseOptions(args);
             } catch (CommandLineParsingException e) {
-                log.warning(LogType.USER_MESSAGE, coreBundle.getString("how.to.display.help"));
+                LOG.warning(LogType.USER_MESSAGE, coreBundle.getString("how.to.display.help"));
                 throw e;
             }
 
@@ -187,11 +191,11 @@ public class Main {
                 main.doMigration();
 
                 if (COMMANDS.UPDATE.equals(main.command)) {
-                    log.info(LogType.USER_MESSAGE, coreBundle.getString("update.successful"));
+                    LOG.info(LogType.USER_MESSAGE, coreBundle.getString("update.successful"));
                 } else if (main.command.startsWith(COMMANDS.ROLLBACK) && !main.command.endsWith("SQL")) {
-                    log.info(LogType.USER_MESSAGE, coreBundle.getString("rollback.successful"));
+                    LOG.info(LogType.USER_MESSAGE, coreBundle.getString("rollback.successful"));
                 } else if (!main.command.endsWith("SQL")) {
-                    log.info(LogType.USER_MESSAGE, String.format(coreBundle.getString("command.successful"), main.command));
+                    LOG.info(LogType.USER_MESSAGE, String.format(coreBundle.getString("command.successful"), main.command));
                 }
 
             });
@@ -209,9 +213,9 @@ public class Main {
                 if (e.getCause() instanceof ValidationFailedException) {
                     ((ValidationFailedException) e.getCause()).printDescriptiveError(System.out);
                 } else {
-                    log.severe(LogType.USER_MESSAGE,
+                    LOG.severe(LogType.USER_MESSAGE,
                         (String.format(coreBundle.getString("unexpected.error"), message)), e);
-                    log.severe(LogType.USER_MESSAGE, generateLogLevelWarningMessage(outputLoggingEnabled));
+                    LOG.severe(LogType.USER_MESSAGE, generateLogLevelWarningMessage(outputLoggingEnabled));
                 }
             } catch (IllegalFormatException e1) {
                 e1.printStackTrace();
@@ -375,7 +379,7 @@ public class Main {
 
     private static void addWarFileClasspathEntries(File classPathFile, List<URL> urls) throws IOException {
         URL jarUrl = new URL("jar:" + classPathFile.toURI().toURL() + "!/WEB-INF/classes/");
-        LOG.info(LogType.LOG, "adding '" + jarUrl + "' to classpath");
+        LOG.debug(LogType.LOG, "adding '" + jarUrl + "' to classpath");
         urls.add(jarUrl);
 
         try (
@@ -388,7 +392,7 @@ public class Main {
                         && entry.getName().toLowerCase().endsWith(".jar")) {
                     File jar = extract(warZip, entry);
                     URL newUrl = new URL("jar:" + jar.toURI().toURL() + "!/");
-                    LOG.info(LogType.LOG, "adding '" + newUrl + "' to classpath");
+                    LOG.debug(LogType.LOG, "adding '" + newUrl + "' to classpath");
                     urls.add(newUrl);
                     jar.deleteOnExit();
                 }
@@ -693,9 +697,7 @@ public class Main {
                         String.format(coreBundle.getString("parameter.unknown"), entry.getKey())
                     );
                 } else {
-                    LogService.getLog(getClass()).warning(
-                        LogType.LOG, String.format(coreBundle.getString("parameter.ignored"), entry.getKey())
-                    );
+					LOG.warning(LogType.LOG, String.format(coreBundle.getString("parameter.ignored"), entry.getKey()));
                 }
             } catch (IllegalAccessException e) {
                 throw new UnexpectedLiquibaseException (
@@ -1107,36 +1109,35 @@ public class Main {
             } else if (COMMANDS.RELEASE_LOCKS.equalsIgnoreCase(command)) {
                 LockService lockService = LockServiceFactory.getInstance().getLockService(database);
                 lockService.forceReleaseLock();
-                LogService.getLog(getClass()).info(LogType.USER_MESSAGE, String.format(
+				LOG.info(LogType.USER_MESSAGE, String.format(
                     coreBundle.getString("successfully.released.database.change.log.locks"),
                     liquibase.getDatabase().getConnection().getConnectionUserName() +
                         "@" + liquibase.getDatabase().getConnection().getURL()
                     )
-                );
+				);
                 return;
             } else if (COMMANDS.TAG.equalsIgnoreCase(command)) {
                 liquibase.tag(getCommandArgument());
-                LogService.getLog(getClass()).info(
-                    LogType.LOG, String.format(
-                        coreBundle.getString("successfully.tagged"), liquibase.getDatabase()
-                            .getConnection().getConnectionUserName() + "@" +
-                            liquibase.getDatabase().getConnection().getURL()
-                    )
+				LOG.info(LogType.LOG, String.format(
+						coreBundle.getString("successfully.tagged"), liquibase.getDatabase()
+							.getConnection().getConnectionUserName() + "@" +
+							liquibase.getDatabase().getConnection().getURL()
+					)
                 );
                 return;
             } else if (COMMANDS.TAG_EXISTS.equalsIgnoreCase(command)) {
                 String tag = commandParams.iterator().next();
                 boolean exists = liquibase.tagExists(tag);
                 if (exists) {
-                    LogService.getLog(getClass()).info(
-                        LogType.LOG, String.format(coreBundle.getString("tag.exists"), tag,
+                    LOG.info(LogType.LOG, String.format(
+						coreBundle.getString("tag.exists"), tag,
                             liquibase.getDatabase().getConnection().getConnectionUserName() + "@" +
                                 liquibase.getDatabase().getConnection().getURL()
                         )
                     );
                 } else {
-                    LogService.getLog(getClass()).info(
-                        LogType.LOG, String.format(coreBundle.getString("tag.does.not.exist"), tag,
+                    LOG.info(LogType.LOG, String.format(
+						coreBundle.getString("tag.does.not.exist"), tag,
                             liquibase.getDatabase().getConnection().getConnectionUserName() + "@" +
                                 liquibase.getDatabase().getConnection().getURL()
                         )
@@ -1151,7 +1152,7 @@ public class Main {
                     OPTIONS.SCHEMAS, database.getDefaultSchema().getSchemaName())
                 );
 
-                LogService.getLog(getClass()).info(LogType.USER_MESSAGE, dropAllCommand.execute().print());
+                LOG.info(LogType.USER_MESSAGE, dropAllCommand.execute().print());
                 return;
             } else if (COMMANDS.STATUS.equalsIgnoreCase(command)) {
                 boolean runVerbose = false;
@@ -1177,8 +1178,7 @@ public class Main {
                     e.printDescriptiveError(System.err);
                     return;
                 }
-                LogService.getLog(getClass()).info(
-                    LogType.USER_MESSAGE, coreBundle.getString("no.validation.errors.found"));
+                LOG.info(LogType.USER_MESSAGE, coreBundle.getString("no.validation.errors.found"));
                 return;
             } else if (COMMANDS.CLEAR_CHECKSUMS.equalsIgnoreCase(command)) {
                 liquibase.clearCheckSums();
@@ -1186,7 +1186,7 @@ public class Main {
             } else if (COMMANDS.CALCULATE_CHECKSUM.equalsIgnoreCase(command)) {
                 CheckSum checkSum = null;
                 checkSum = liquibase.calculateCheckSum(commandParams.iterator().next());
-                LogService.getLog(getClass()).info(LogType.USER_MESSAGE, checkSum.toString());
+                LOG.info(LogType.USER_MESSAGE, checkSum.toString());
                 return;
             } else if (COMMANDS.DB_DOC.equalsIgnoreCase(command)) {
                 if (commandParams.isEmpty()) {
@@ -1320,8 +1320,7 @@ public class Main {
                 database.rollback();
                 database.close();
             } catch (DatabaseException e) {
-                LogService.getLog(getClass()).warning(
-                    LogType.LOG, coreBundle.getString("problem.closing.connection"), e);
+                LOG.warning(LogType.LOG, coreBundle.getString("problem.closing.connection"), e);
             }
         }
     }
@@ -1420,7 +1419,7 @@ public class Main {
                 fileOut = new FileOutputStream(outputFile, false);
                 return new OutputStreamWriter(fileOut, charsetName);
             } catch (IOException e) {
-                LogService.getLog(getClass()).severe(LogType.LOG, String.format(
+                LOG.severe(LogType.LOG, String.format(
                     coreBundle.getString("could.not.create.output.file"),
                     outputFile));
                 throw e;

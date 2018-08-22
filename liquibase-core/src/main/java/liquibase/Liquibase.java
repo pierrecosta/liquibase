@@ -438,6 +438,9 @@ public class Liquibase {
     }
 
     private void outputHeader(String message) throws DatabaseException {
+		LOG.info(LogType.USER_MESSAGE, "Change Log: " + changeLogFile + "Ran at: " +
+            DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date())
+		);
         Executor executor = ExecutorService.getInstance().getExecutor(database);
         executor.comment("*********************************************************************");
         executor.comment(message);
@@ -608,7 +611,6 @@ public class Liquibase {
                 "Error executing rollback script. ChangeSets will still be marked as rolled back: " + e.getMessage(),
                 e
             );
-            LogService.getLog(getClass()).severe(LogType.LOG, ex.getMessage());
             LOG.severe(LogType.LOG, "Error executing rollback script", ex);
             if (changeExecListener != null) {
                 changeExecListener.runFailed(null, databaseChangeLog, database, ex);
